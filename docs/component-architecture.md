@@ -9,7 +9,7 @@ This document provides a visual representation of how all Vue components are org
 ```mermaid
 graph TD
     A[App.vue] --> B{isLoaded?}
-    B -->|No| C[LoadingSpinner<br/>size="large"<br/>text="Initializing..."]
+    B -->|No| C[LoadingSpinner<br/>size=large<br/>text=Initializing...]
     B -->|Yes| D{user exists?}
     
     D -->|No| E[SignInButton]
@@ -17,18 +17,18 @@ graph TD
     
     D -->|Yes| G[ConvexProvider.vue]
     G --> H{isReady?}
-    H -->|No| I[LoadingSpinner<br/>size="medium"<br/>color="success"<br/>text="Connecting to database..."]
+    H -->|No| I[LoadingSpinner<br/>size=medium<br/>color=success<br/>text=Connecting to database...]
     H -->|Yes| J[UserProfile.vue]
     
     J --> K{isLoading?}
-    K -->|Yes| L[LoadingSpinner<br/>size="medium"<br/>text="Loading profile..."]
+    K -->|Yes| L[LoadingSpinner<br/>size=medium<br/>text=Loading profile...]
     K -->|No| M{error?}
     
     M -->|Yes| N[Error Display<br/>+ Retry Button]
     M -->|No| O{currentUser?}
     
     O -->|Yes| P[Profile Content<br/>Welcome message + email]
-    O -->|No| Q[Empty State<br/>"No profile data found"]
+    O -->|No| Q[Empty State<br/>No profile data found]
     
     style A fill:#42b883
     style G fill:#ff6b6b

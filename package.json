@@ -3,6 +3,30 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "A modern, full-stack web application demonstrating secure user authentication and real-time data management using Vue 3, Convex backend, and Clerk authentication.",
+  "keywords": [
+    "vue",
+    "vue3",
+    "convex",
+    "clerk",
+    "authentication",
+    "real-time",
+    "typescript",
+    "vite",
+    "fullstack",
+    "jwt",
+    "database"
+  ],
+  "author": "Vue + Convex + Clerk Auth System",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/vue-convex-clerk-auth.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/vue-convex-clerk-auth/issues"
+  },
+  "homepage": "https://github.com/yourusername/vue-convex-clerk-auth#readme",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
@@ -14,6 +38,9 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@clerk/vue": "^1.11.6",
+    "convex": "^1.26.2",
+    "convex-vue": "^0.1.5",
     "vue": "^3.5.18"
   },
   "devDependencies": {

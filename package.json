@@ -1,11 +1,10 @@
 {
-  "name": "vue-convex-clerk-auth",
-  "version": "0.0.0",
-  "private": true,
+  "name": "vue-convex-clerk-starter",
+  "version": "1.0.0",
+  "private": false,
   "type": "module",
-  "description": "A modern, full-stack web application demonstrating secure user authentication and real-time data management using Vue 3, Convex backend, and Clerk authentication.",
+  "description": "🚀 Production-ready Vue 3 + Convex + Clerk starter template with authentication, real-time data, and TypeScript",
   "keywords": [
-    "vue",
     "vue3",
     "convex",
     "clerk",
@@ -14,19 +13,21 @@
     "typescript",
     "vite",
     "fullstack",
+    "starter-template",
+    "database",
     "jwt",
-    "database"
+    "notes-app"
   ],
-  "author": "Vue + Convex + Clerk Auth System",
+  "author": "Martin Ess <martin@nxtacc.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/vue-convex-clerk-auth.git"
+    "url": "https://github.com/daisys-cloud/vue-convex-clerk-starter.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/vue-convex-clerk-auth/issues"
+    "url": "https://github.com/daisys-cloud/vue-convex-clerk-starter/issues"
   },
-  "homepage": "https://github.com/yourusername/vue-convex-clerk-auth#readme",
+  "homepage": "https://github.com/daisys-cloud/vue-convex-clerk-starter#readme",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

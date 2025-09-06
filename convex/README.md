@@ -1,90 +1,184 @@
-# Welcome to your Convex functions directory!
+# Convex Backend Functions
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+This directory contains the Convex backend functions for the Vue + Clerk starter template.
 
-A query function that takes two arguments looks like:
+## 📁 File Structure
 
-```ts
-// convex/myFunctions.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+```
+convex/
+├── _generated/          # Auto-generated API types
+├── auth.config.js      # Clerk authentication setup
+├── schema.ts           # Database schema definition
+├── helpers.ts          # Reusable auth & utility functions
+├── users.ts            # User management functions
+└── notes.ts            # Notes CRUD operations
+```
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+## 🔧 Core Functions
 
-  // Function implementation.
+### **User Management (users.ts)**
+```typescript
+// Get current authenticated user
+const user = useConvexQuery(api.users.getCurrentUser);
+
+// Create/update user (called by ConvexProvider)
+const storeUser = useConvexMutation(api.users.store);
+```
+
+### **Notes Operations (notes.ts)**
+```typescript
+// Get notes with filtering
+const notes = useConvexQuery(api.notes.getNotes, {
+  filters: { createdByCurrentUser: true }
+});
+
+// Create a new note
+const createNote = useConvexMutation(api.notes.createNote);
+const noteId = await createNote({
+  title: "My Note",
+  content: "Note content",
+  billable: true,
+  duration: 60
+});
+
+// Update existing note
+const updateNote = useConvexMutation(api.notes.updateNote);
+await updateNote({
+  id: noteId,
+  title: "Updated Title",
+  billStatus: "billed"
+});
+
+// Delete note
+const deleteNote = useConvexMutation(api.notes.deleteNote);
+await deleteNote({ id: noteId });
+```
+
+### **Helper Functions (helpers.ts)**
+```typescript
+// Used internally by other functions
+await requireAuth(ctx);           // Require authentication
+const { user } = await requireUser(ctx);  // Get authenticated user
+const user = await getCurrentUserOptional(ctx);  // Optional user
+```
+
+## 🛡️ Security Features
+
+### **Authentication Guards**
+All functions use helper functions for consistent authentication:
+```typescript
+export const myFunction = mutation({
   handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query("tablename").collect();
-
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
-
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
+    const { user } = await requireUser(ctx);  // Always authenticate
+    // Function logic here
+  }
 });
 ```
 
-Using this query function in a React component looks like:
-
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-  first: 10,
-  second: "hello",
-});
-```
-
-A mutation function looks like:
-
-```ts
-// convex/myFunctions.ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
-
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert("messages", message);
-
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get(id);
-  },
-});
-```
-
-Using this mutation function in a React component looks like:
-
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: "Hello!", second: "me" });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: "Hello!", second: "me" }).then((result) =>
-    console.log(result),
-  );
+### **User Isolation**
+Users can only access their own data:
+```typescript
+// Check ownership before operations
+if (note.createdBy !== user._id) {
+  throw new ConvexError("Not authorized");
 }
 ```
 
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+### **Input Validation**
+Comprehensive server-side validation:
+```typescript
+const title = args.title.trim();
+if (title.length === 0 || title.length > 200) {
+  throw new ConvexError("Title must be between 1 and 200 characters");
+}
+```
+
+## 📊 Database Schema
+
+### **Users Table**
+```typescript
+users: defineTable({
+  clerkId: v.string(),      // Clerk user ID (unique)
+  email: v.string(),        // User email
+  name: v.string(),         // Display name
+  createdAt: v.number(),    // Creation timestamp
+}).index("by_clerk_id", ["clerkId"])
+```
+
+### **Notes Table**
+```typescript
+notes: defineTable({
+  title: v.string(),        // Note title (1-200 chars)
+  content: v.string(),      // Note content (1-5000 chars)
+  createdBy: v.id("users"), // User reference
+  billable: v.boolean(),    // Is this billable work?
+  duration: v.optional(v.number()), // Duration in minutes
+  billStatus: v.union(      // Billing status
+    v.literal("open"),
+    v.literal("billed"),
+    v.literal("canceled")
+  ),
+  createdAt: v.number(),    // Creation timestamp
+})
+.index("by_user", ["createdBy"])
+.index("by_bill_status", ["billStatus"])
+```
+
+## ⚡ Performance Features
+
+### **Smart Indexing**
+Optimized queries with proper indexes:
+```typescript
+// Efficient user lookup
+.withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+
+// Fast user-specific queries
+.withIndex("by_user", (q) => q.eq("createdBy", user._id))
+
+// Billing status filtering
+.withIndex("by_bill_status", (q) => q.eq("billStatus", "open"))
+```
+
+### **Backend Filtering**
+Filtering happens on the server for better performance:
+```typescript
+const notes = await getNotes({ 
+  filters: { 
+    createdByCurrentUser: true,
+    billStatus: "open"
+  }
+});
+```
+
+## 🚀 Local Development
+
+### **Start Local Server**
+```bash
+npx convex dev
+```
+
+### **Dashboard Access**
+- Local dashboard: `http://localhost:3210`
+- View real-time data, logs, and function calls
+- Debug authentication and data flow
+
+### **TypeScript Integration**
+Auto-generated types provide full type safety:
+```typescript
+import { api } from "../convex/_generated/api";
+import type { Doc, Id } from "../convex/_generated/dataModel";
+
+type Note = Doc<"notes">;
+type NoteId = Id<"notes">;
+```
+
+## 📚 Learn More
+
+- **[Convex Docs](https://docs.convex.dev/)** - Complete documentation
+- **[Vue Integration](https://docs.convex.dev/client/vue)** - Vue-specific guides
+- **[Authentication](https://docs.convex.dev/auth/clerk)** - Clerk + Convex setup
+- **[Database](https://docs.convex.dev/database)** - Schema and queries
+
+---
+
+*These functions power a complete CRUD application with enterprise-grade security and performance.*

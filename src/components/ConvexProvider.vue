@@ -1,13 +1,20 @@
 <template>
-  <div v-if="isReady">
-    <slot />
-  </div>
-  <div v-else class="convex-loading">
+  <div v-if="!isReady" class="convex-loading">
     <LoadingSpinner
       size="medium"
       color="success"
       text="Connecting to database..."
     />
+  </div>
+  <div v-else-if="authError" class="auth-error">
+    <div class="error-content">
+      <h3>Authentication Error</h3>
+      <p>Failed to connect to the database. Please try refreshing the page.</p>
+      <button @click="retryAuth" class="retry-button">Retry</button>
+    </div>
+  </div>
+  <div v-else>
+    <slot />
   </div>
 </template>
 
@@ -44,20 +51,17 @@ const { user, isLoaded: clerkIsLoaded } = useUser();
 const { session, isLoaded: sessionIsLoaded } = useSession();
 
 /**
- * Loading state flag that indicates whether authentication has been established.
- * Child components are only rendered once this flag is set to true.
- *
- * This prevents rendering children before Convex authentication is properly set up,
- * avoiding unnecessary API calls and potential errors.
+ * Loading and error state management for authentication.
+ * Child components are only rendered once authentication is successfully established.
  */
 const isReady = ref(false);
+const authError = ref<Error | null>(null);
 
 /**
  * Convex client instance that provides access to the backend database.
- * This client is provided to child components through Vue's provide/inject system.
+ * This client is automatically provided by convex-vue plugin.
  */
 const convex = useConvexClient();
-provide("convex", convex);
 
 /**
  * Convex mutation hook for creating or getting user data in the database.
@@ -86,6 +90,9 @@ const { mutate: storeUser } = useConvexMutation(api.users.store);
  * ```
  */
 const updateAuth = async () => {
+  // Reset error state on new auth attempt
+  authError.value = null;
+
   // Wait for both Clerk user and session to be loaded before proceeding
   if (!clerkIsLoaded.value || !sessionIsLoaded.value) {
     isReady.value = false; // Explicitly set to false while loading
@@ -101,11 +108,11 @@ const updateAuth = async () => {
         convex.setAuth(async () => token);
         console.log("✅ Convex authentication token set.");
       } else {
-        console.warn("⚠️ No Convex JWT token received.");
+        throw new Error("No Convex JWT token received from Clerk session");
       }
 
       // Sync user to Convex database
-      await storeUser();
+      await storeUser({});
       console.log("✅ User synced with Convex successfully.");
 
       // Authentication is fully established, now we can render children
@@ -113,14 +120,23 @@ const updateAuth = async () => {
 
     } catch (error) {
       console.error("❌ Error setting up Convex authentication:", error);
-      // In case of error, we might still want to show the UI
-      isReady.value = true;
+      authError.value = error instanceof Error ? error : new Error("Authentication failed");
+      isReady.value = false; // Don't render children on auth error
     }
   } else {
-    // User is not authenticated
-    convex.close();
+    // User is not authenticated - explicitly clear auth state
+    convex.setAuth(async () => null);
     isReady.value = true; // Ready to show the "signed-out" state
   }
+};
+
+/**
+ * Retry authentication after an error occurred.
+ * This function is called when the user clicks the retry button.
+ */
+const retryAuth = () => {
+  authError.value = null;
+  updateAuth();
 };
 
 /**
@@ -152,5 +168,53 @@ watch([user, session, clerkIsLoaded, sessionIsLoaded], updateAuth, {
   justify-content: center;
   min-height: 200px;
   padding: 20px;
+}
+
+/**
+ * Error state styles for authentication failures.
+ * Provides clear visual feedback and retry option when auth fails.
+ */
+.auth-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 20px;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 30px;
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+.error-content h3 {
+  color: #dc3545;
+  margin: 0 0 15px 0;
+  font-size: 1.2em;
+}
+
+.error-content p {
+  color: #6c757d;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.retry-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #0056b3;
 }
 </style>

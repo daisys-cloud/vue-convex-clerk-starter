@@ -27,33 +27,18 @@
  * the user's name and email address.
  *
  * Key features:
- * - Automatically fetches current user data on component mount
- * - Creates or updates user record in Convex database
+ * - Automatically fetches current user data from Convex
  * - Displays user profile information in a clean format
  * - Handles loading and error states gracefully
- * - Prevents unnecessary API calls during loading states
+ * - User creation is handled by ConvexProvider during auth setup
  *
  * @author Vue + Convex + Clerk Auth System
  * @version 1.0.0
  */
 
-import { useConvexQuery, useConvexMutation } from "convex-vue";
+import { useConvexQuery } from "convex-vue";
 import { api } from "../../convex/_generated/api";
-import { onMounted, computed } from "vue";
 import LoadingSpinner from "./LoadingSpinner.vue";
-
-/**
- * Convex mutation hook for storing user data.
- *
- * This mutation is called when the component mounts to ensure that
- * the current user exists in the Convex database. If the user doesn't
- * exist, it creates a new record; if they do exist, it returns the
- * existing user ID.
- *
- * @type {import('convex-vue').UseConvexMutationReturn}
- */
-const { mutate: storeUser, isPending: isCreatingUser } =
-  useConvexMutation(api.users.store);
 
 /**
  * Convex query hook for fetching the current user's profile data.
@@ -62,68 +47,25 @@ const { mutate: storeUser, isPending: isCreatingUser } =
  * information from the Convex database. The data is reactive and will
  * automatically update if the user's profile changes.
  *
- * @type {import('convex-vue').UseConvexQueryReturn}
+ * Note: User creation is handled by ConvexProvider during authentication,
+ * so we only need to query for the existing user data here.
  */
 const {
   data: currentUser,
   error,
-  isPending: isFetchingUser,
-  suspense,
+  isPending: isLoading,
 } = useConvexQuery(api.users.getCurrentUser, {});
-
-/**
- * Computed property that determines if the component is in a loading state.
- *
- * This prevents rendering the profile content while data is being fetched
- * or while the user record is being created/updated.
- */
-const isLoading = computed(() => isFetchingUser.value || isCreatingUser.value);
 
 /**
  * Retry function for reloading user data when an error occurs.
  *
- * This function can be called by the user to retry loading their profile
- * data if there was an error during the initial load.
- *
- * @async
- * @returns {Promise<void>}
+ * Currently uses page reload as convex-vue@0.1.5 doesn't yet support
+ * individual query refetch. Future versions may support more elegant
+ * query-specific retry functionality.
  */
-const retryLoad = async () => {
-  try {
-    await storeUser();
-  } catch (error) {
-    console.error("Error retrying user load:", error);
-  }
+const retryLoad = () => {
+  window.location.reload(); // Fallback bis refetch() verfügbar ist
 };
-
-/**
- * Lifecycle hook that runs when the component is mounted.
- *
- * This function ensures that the current user exists in the Convex
- * database by calling the store mutation. This is necessary
- * because users might authenticate with Clerk but not yet have a
- * corresponding record in the Convex database.
- *
- * The function is only called once when the component mounts, preventing
- * unnecessary API calls during re-renders.
- *
- * @async
- * @returns {Promise<void>}
- *
- * @example
- * ```typescript
- * onMounted(async () => {
- *   await storeUser();
- * });
- * ```
- */
-onMounted(async () => {
-  try {
-    await storeUser();
-  } catch (error) {
-    console.error("Error creating/updating user:", error);
-  }
-});
 </script>
 
 <style scoped>

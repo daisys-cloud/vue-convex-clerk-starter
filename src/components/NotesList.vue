@@ -63,36 +63,37 @@ import { ref, computed } from 'vue'
 import { useConvexQuery, useConvexMutation } from 'convex-vue'
 import { api } from '../../convex/_generated/api'
 import NotesForm from './NotesForm.vue'
+import type { Doc, Id } from "../../convex/_generated/dataModel"
+
+// Type definitions
+type Note = Doc<"notes">
 
 // Reactive state
 const showCreateForm = ref(false)
-const editingNote = ref(null)
+const editingNote = ref<Note | null>(null)
 const showOnlyMyNotes = ref(false)
 
-// --- CONDITIONAL QUERIES ---
-const { data: allNotesData, isPending: allNotesLoading } = useConvexQuery(api.notes.getAllNotes)
-const { data: userNotesData, isPending: userNotesLoading } = useConvexQuery(api.notes.getUserNotes)
-
-// --- COMPUTED PROPERTIES ---
-const allNotes = computed(() => {
-  return showOnlyMyNotes.value ? userNotesData.value : allNotesData.value
-})
-
-const isLoading = computed(() => {
-  return showOnlyMyNotes.value ? userNotesLoading.value : allNotesLoading.value
-})
+// --- FUTURE-PROOF FILTERING ARCHITECTURE ---
+const { data: allNotes, isPending: isLoading } = useConvexQuery(
+  api.notes.getNotes,
+  computed(() => ({
+    filters: {
+      createdByCurrentUser: showOnlyMyNotes.value || undefined
+    }
+  }))
+)
 
 // --- MUTATIONS ---
 const { mutate: deleteNoteMutation } = useConvexMutation(api.notes.deleteNote)
 
 // --- METHODS ---
-const editNote = (note: any) => {
+const editNote = (note: Note) => {
   editingNote.value = note
 }
 
-const deleteNote = async (noteId: string) => {
+const deleteNote = async (noteId: Id<"notes">) => {
   if (confirm('Are you sure?')) {
-    await deleteNoteMutation({ id: noteId })
+    await deleteNoteMutation({ id: noteId });
   }
 }
 

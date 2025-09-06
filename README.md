@@ -278,6 +278,8 @@ This template evolved from **real-world development challenges**:
 
 **Credits**: Built upon the excellent foundation from [Aaron Saunders' vue-convex-clerk-auth](https://github.com/aaronksaunders/vue-convex-clerk-auth), taking it from auth-only to a complete production-ready starter.
 
+**Author**: Developed and architected by [Martin Ess](https://github.com/daisys-cloud) with focus on local development workflow and enterprise-grade code quality.
+
 ## 📚 Learn More
 
 - **[Vue 3 Guide](https://vuejs.org/guide/)** - Frontend framework

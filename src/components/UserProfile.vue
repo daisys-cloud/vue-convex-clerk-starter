@@ -43,7 +43,7 @@ import { onMounted, computed } from "vue";
 import LoadingSpinner from "./LoadingSpinner.vue";
 
 /**
- * Convex mutation hook for creating or updating user data.
+ * Convex mutation hook for storing user data.
  *
  * This mutation is called when the component mounts to ensure that
  * the current user exists in the Convex database. If the user doesn't
@@ -52,8 +52,8 @@ import LoadingSpinner from "./LoadingSpinner.vue";
  *
  * @type {import('convex-vue').UseConvexMutationReturn}
  */
-const { mutate: getOrCreateUser, isPending: isCreatingUser } =
-  useConvexMutation(api.users.getOrCreateUser);
+const { mutate: storeUser, isPending: isCreatingUser } =
+  useConvexMutation(api.users.store);
 
 /**
  * Convex query hook for fetching the current user's profile data.
@@ -90,7 +90,7 @@ const isLoading = computed(() => isFetchingUser.value || isCreatingUser.value);
  */
 const retryLoad = async () => {
   try {
-    await getOrCreateUser({});
+    await storeUser();
   } catch (error) {
     console.error("Error retrying user load:", error);
   }
@@ -100,7 +100,7 @@ const retryLoad = async () => {
  * Lifecycle hook that runs when the component is mounted.
  *
  * This function ensures that the current user exists in the Convex
- * database by calling the getOrCreateUser mutation. This is necessary
+ * database by calling the store mutation. This is necessary
  * because users might authenticate with Clerk but not yet have a
  * corresponding record in the Convex database.
  *
@@ -113,13 +113,13 @@ const retryLoad = async () => {
  * @example
  * ```typescript
  * onMounted(async () => {
- *   await getOrCreateUser({});
+ *   await storeUser();
  * });
  * ```
  */
 onMounted(async () => {
   try {
-    await getOrCreateUser({});
+    await storeUser();
   } catch (error) {
     console.error("Error creating/updating user:", error);
   }

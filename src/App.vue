@@ -15,7 +15,27 @@
 
       <main>
         <ConvexProvider v-if="user">
-          <UserProfile />
+          <nav class="main-nav">
+            <button 
+              @click="activeView = 'profile'" 
+              :class="{ active: activeView === 'profile' }"
+              class="nav-btn"
+            >
+              Profile
+            </button>
+            <button 
+              @click="activeView = 'notes'" 
+              :class="{ active: activeView === 'notes' }"
+              class="nav-btn"
+            >
+              Notes
+            </button>
+          </nav>
+          
+          <div class="content">
+            <UserProfile v-if="activeView === 'profile'" />
+            <NotesList v-if="activeView === 'notes'" />
+          </div>
         </ConvexProvider>
         <p v-else>Please sign in</p>
       </main>
@@ -49,10 +69,15 @@
  * @version 1.0.0
  */
 
+import { ref } from 'vue'
 import { SignInButton, UserButton, useUser } from "@clerk/vue";
 import ConvexProvider from "./components/ConvexProvider.vue";
 import UserProfile from "./components/UserProfile.vue";
 import LoadingSpinner from "./components/LoadingSpinner.vue";
+import NotesList from "./components/NotesList.vue";
+
+// Active view state
+const activeView = ref<'profile' | 'notes'>('notes')
 
 /**
  * Clerk authentication hook for accessing the current user state.
@@ -81,5 +106,51 @@ const { user, isLoaded } = useUser();
   justify-content: center;
   min-height: 100vh;
   background-color: #f8f9fa;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 0;
+}
+
+header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.main-nav {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  border: none;
+  background: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: #e9ecef;
+}
+
+.nav-btn.active {
+  background: #007bff;
+  color: white;
+}
+
+.content {
+  min-height: calc(100vh - 200px);
 }
 </style>

@@ -60,10 +60,10 @@ const convex = useConvexClient();
 provide("convex", convex);
 
 /**
- * Convex mutation hook for updating user data in the database.
+ * Convex mutation hook for creating or getting user data in the database.
  * This mutation is used to sync user profile changes from Clerk to Convex.
  */
-const { mutate: updateUserData } = useConvexMutation(api.users.updateUserData);
+const { mutate: storeUser } = useConvexMutation(api.users.store);
 
 /**
  * Updates Convex authentication and syncs user data when Clerk authentication changes.
@@ -88,6 +88,7 @@ const { mutate: updateUserData } = useConvexMutation(api.users.updateUserData);
 const updateAuth = async () => {
   // Wait for both Clerk user and session to be loaded before proceeding
   if (!clerkIsLoaded.value || !sessionIsLoaded.value) {
+    isReady.value = false; // Explicitly set to false while loading
     return;
   }
 
@@ -95,27 +96,31 @@ const updateAuth = async () => {
     try {
       // Get Convex-specific JWT token from Clerk session
       const token = await session.value.getToken({ template: "convex" });
-      convex.setAuth(async () => token);
-
-      // Sync user data to Convex whenever user changes
-      if (user.value) {
-        await updateUserData({
-          clerkId: user.value.id,
-          email: user.value.primaryEmailAddress?.emailAddress || "",
-          name: `${user.value.firstName || ""} ${user.value.lastName || ""}`.trim(),
-        });
+      
+      if (token) {
+        convex.setAuth(async () => token);
+        console.log("✅ Convex authentication token set.");
+      } else {
+        console.warn("⚠️ No Convex JWT token received.");
       }
+
+      // Sync user to Convex database
+      await storeUser();
+      console.log("✅ User synced with Convex successfully.");
+
+      // Authentication is fully established, now we can render children
+      isReady.value = true;
+
     } catch (error) {
-      console.error("Error setting up Convex authentication:", error);
-      // Even if there's an error, we should set ready to true to prevent infinite loading
+      console.error("❌ Error setting up Convex authentication:", error);
+      // In case of error, we might still want to show the UI
+      isReady.value = true;
     }
   } else {
-    // Close Convex connection when user is not authenticated
+    // User is not authenticated
     convex.close();
+    isReady.value = true; // Ready to show the "signed-out" state
   }
-
-  // Set ready state regardless of authentication success/failure
-  isReady.value = true;
 };
 
 /**

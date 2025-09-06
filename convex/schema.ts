@@ -56,4 +56,29 @@ export default defineSchema({
     userId: v.id("users"),
     createdAt: v.number(),
   }),
+
+  /**
+   * Notes table for storing billable work notes and time tracking.
+   *
+   * This table stores detailed work notes with billing information.
+   * Each note is linked to a user and includes billing status tracking.
+   *
+   * @field title - Title/summary of the work done
+   * @field content - Detailed description of the work
+   * @field createdBy - Reference to the user who created the note
+   * @field createdAt - Timestamp when note was created
+   * @field billable - Whether this work is billable (true/false)
+   * @field duration - Duration in minutes (optional)
+   * @field billStatus - Billing status: "open", "billed", "canceled"
+   */
+  notes: defineTable({
+    title: v.string(),
+    content: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    billable: v.boolean(),
+    duration: v.optional(v.number()),
+    billStatus: v.union(v.literal("open"), v.literal("billed"), v.literal("canceled")),
+  }).index("by_user", ["createdBy"]).index("by_bill_status", ["billStatus"]),
+
 });
